@@ -6,6 +6,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Geolocation;
+using Windows.Devices.Geolocation.Geofencing;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Core;
@@ -106,6 +107,7 @@ namespace GeofenceDemo
                 {
                     case GeolocationAccessStatus.Allowed:
 
+                        var geoFences = GeofenceMonitor.Current.Geofences;
                         // You should set MovementThreshold for distance-based tracking
                         // or ReportInterval for periodic-based tracking before adding event
                         // handlers. If none is set, a ReportInterval of 1 second is used
@@ -229,6 +231,43 @@ namespace GeofenceDemo
                         ScenarioOutput_Status.Text = "Unknown";
                         this.NotifyUser(string.Empty, NotifyType.StatusMessage);
                         break;
+                }
+            });
+        }
+
+        public async void OnGeofenceStateChanged(GeofenceMonitor sender, object e)
+        {
+            var reports = sender.ReadReports();
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                foreach (GeofenceStateChangeReport report in reports)
+                {
+                    GeofenceState state = report.NewState;
+
+                    Geofence geofence = report.Geofence;
+
+                    if (state == GeofenceState.Removed)
+                    {
+                        // remove the geofence from the geofences collection
+                        GeofenceMonitor.Current.Geofences.Remove(geofence);
+                    }
+                    else if (state == GeofenceState.Entered)
+                    {
+                        // Your app takes action based on the entered event
+
+                        // NOTE: You might want to write your app to take particular
+                        // action based on whether the app has internet connectivity.
+
+                    }
+                    else if (state == GeofenceState.Exited)
+                    {
+                        // Your app takes action based on the exited event
+
+                        // NOTE: You might want to write your app to take particular
+                        // action based on whether the app has internet connectivity.
+
+                    }
                 }
             });
         }
