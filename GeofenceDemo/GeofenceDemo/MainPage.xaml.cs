@@ -35,6 +35,8 @@ namespace GeofenceDemo
         public MainPage()
         {
             this.InitializeComponent();
+            this.InitializeGeolocation();
+            this.GenerateGeofence();
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -58,6 +60,9 @@ namespace GeofenceDemo
                 _geolocator.PositionChanged -= OnPositionChanged;
                 _geolocator.StatusChanged -= OnStatusChanged;
             }
+
+            GeofenceMonitor.Current.GeofenceStateChanged -= OnGeofenceStateChanged;
+            GeofenceMonitor.Current.StatusChanged -= OnGeofenceStatusChanged;
 
             base.OnNavigatingFrom(e);
         }
@@ -122,11 +127,15 @@ namespace GeofenceDemo
 
                         // Subscribe to StatusChanged event to get updates of location status changes
                         _geolocator.StatusChanged += OnStatusChanged;
+                        _geolocator.DesiredAccuracy = PositionAccuracy.High;
 
                         this.NotifyUser("Waiting for update...", NotifyType.StatusMessage);
                         LocationDisabledMessage.Visibility = Visibility.Collapsed;
                         GetGeolocationButton.IsEnabled = false;
                         StopSendingGeolocationButton.IsEnabled = true;
+
+                        GeofenceMonitor.Current.GeofenceStateChanged += OnGeofenceStateChanged;
+                        GeofenceMonitor.Current.StatusChanged += OnGeofenceStatusChanged;
                         break;
 
                     case GeolocationAccessStatus.Denied:
@@ -235,43 +244,6 @@ namespace GeofenceDemo
             });
         }
 
-        public async void OnGeofenceStateChanged(GeofenceMonitor sender, object e)
-        {
-            var reports = sender.ReadReports();
-
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                foreach (GeofenceStateChangeReport report in reports)
-                {
-                    GeofenceState state = report.NewState;
-
-                    Geofence geofence = report.Geofence;
-
-                    if (state == GeofenceState.Removed)
-                    {
-                        // remove the geofence from the geofences collection
-                        GeofenceMonitor.Current.Geofences.Remove(geofence);
-                    }
-                    else if (state == GeofenceState.Entered)
-                    {
-                        // Your app takes action based on the entered event
-
-                        // NOTE: You might want to write your app to take particular
-                        // action based on whether the app has internet connectivity.
-
-                    }
-                    else if (state == GeofenceState.Exited)
-                    {
-                        // Your app takes action based on the exited event
-
-                        // NOTE: You might want to write your app to take particular
-                        // action based on whether the app has internet connectivity.
-
-                    }
-                }
-            });
-        }
-
         /// <summary>
         /// Updates the user interface with the Geoposition data provided
         /// </summary>
@@ -297,6 +269,9 @@ namespace GeofenceDemo
             _geolocator.PositionChanged -= OnPositionChanged;
             _geolocator.StatusChanged -= OnStatusChanged;
             _geolocator = null;
+
+            GeofenceMonitor.Current.GeofenceStateChanged -= OnGeofenceStateChanged;
+            GeofenceMonitor.Current.StatusChanged -= OnGeofenceStatusChanged;
 
             GetGeolocationButton.IsEnabled = true;
             StopSendingGeolocationButton.IsEnabled = false;
