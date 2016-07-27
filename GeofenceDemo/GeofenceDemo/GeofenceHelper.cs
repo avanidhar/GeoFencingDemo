@@ -72,39 +72,41 @@ namespace GeofenceDemo
                 this.NotifyUser("Fence already exists. Using it", NotifyType.StatusMessage);
             }
 
+        }
+
+
+
+        /// <summary>
+        /// This is the click handler for the 'Create Geofence' button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnCreateGeofence(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // get lat/long/radius, the fence name (fenceKey), 
+                // and other properties from controls,
+                // depending on data in controls for activation time
+                // and duration the appropriate
+                // constructor will be used.
+                GenerateGeofence();
+
+                ReportView.Visibility = Visibility.Visible;
+                ReportView.Navigate(new Uri("ms-appx-web:///html/index.html"));
+            }
+            catch (TaskCanceledException)
+            {
+                this.NotifyUser("Canceled", NotifyType.StatusMessage);
+            }
+            catch (Exception ex)
+            {
+                // GeofenceMonitor failed in adding a geofence
+                // exceptions could be from out of memory, lat/long out of range,
+                // too long a name, not a unique name, specifying an activation
+                // time + duration that is still in the past
+                this.NotifyUser(ex.ToString(), NotifyType.ErrorMessage);
+            }
+        }
     }
-
-
-
-    /// <summary>
-    /// This is the click handler for the 'Create Geofence' button.
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void OnCreateGeofence(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            // get lat/long/radius, the fence name (fenceKey), 
-            // and other properties from controls,
-            // depending on data in controls for activation time
-            // and duration the appropriate
-            // constructor will be used.
-            GenerateGeofence();
-
-        }
-        catch (TaskCanceledException)
-        {
-            this.NotifyUser("Canceled", NotifyType.StatusMessage);
-        }
-        catch (Exception ex)
-        {
-            // GeofenceMonitor failed in adding a geofence
-            // exceptions could be from out of memory, lat/long out of range,
-            // too long a name, not a unique name, specifying an activation
-            // time + duration that is still in the past
-            this.NotifyUser(ex.ToString(), NotifyType.ErrorMessage);
-        }
-    }
-}
 }

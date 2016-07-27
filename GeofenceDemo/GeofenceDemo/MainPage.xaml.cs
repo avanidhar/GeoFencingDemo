@@ -28,7 +28,6 @@ namespace GeofenceDemo
     public sealed partial class MainPage : Page
     {
         // Provides access to location data
-        private Geolocator _geolocator = null;
         private Geofence fence = null;
         private CoreWindow coreWindow;
         public MainPage()

@@ -8,19 +8,8 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <StackPanel Orientation="Vertical">
+        <StackPanel x:Name="ContainerStack" Orientation="Vertical">
             <TextBlock x:Name="Title" TextWrapping="Wrap" Style="{StaticResource BaseTextBlockStyle}" HorizontalAlignment="Left" Text="Welcome to GeoBI"></TextBlock>
-            <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-            </Grid>
-
             <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
                 <Button x:Name="GetGeolocationButton" Content="Setup Fence" Margin="0,0,10,0" Click="OnCreateGeofence"/>
             </StackPanel>
@@ -32,6 +21,10 @@
                     </ScrollViewer>
                 </Border>
             </StackPanel>
+
+            <ScrollViewer x:Name="WebViewScroller" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+            <WebView x:Name="ReportView" Visibility="Visible" Height="{Binding ActualHeight, ElementName=ContainerStack}" Width="{Binding ActualWidth, ElementName=ContainerStack}"></WebView>
+            </ScrollViewer>
             <TextBlock TextWrapping="Wrap" x:Name="LocationDisabledMessage" Margin="0,10,0,0" FontStyle="Italic" Visibility="Collapsed">
                 <Run Text="Application is not able to get location data. Go to " />
                 <Hyperlink NavigateUri="ms-settings:privacy-location">
