@@ -15,7 +15,7 @@ namespace GeofenceDemo
     public sealed partial class MainPage : Page
     {
         private CancellationTokenSource _cts = null;
-        private static readonly string fenceId = "dummyFence";
+        private static readonly string fenceId = "SampleFence";
         private async void GenerateGeofence()
         {
             bool fenceAlreadyExists = GeofenceMonitor.Current.Geofences.Any(g => g.Id == fenceId);
@@ -36,7 +36,7 @@ namespace GeofenceDemo
                 position.Latitude = pos.Coordinate.Latitude;
                 position.Longitude = pos.Coordinate.Longitude;
                 position.Altitude = 0.0;
-                double radius = 1;
+                double radius = 25;
 
                 // the geofence is a circular region
                 Geocircle geocircle = new Geocircle(position, radius);
@@ -54,7 +54,7 @@ namespace GeofenceDemo
                 try
                 {
                     dwellTime = TimeSpan.FromSeconds(10);
-                    duration = TimeSpan.FromSeconds(20);
+                    duration = TimeSpan.FromMinutes(2);
                     startTime = DateTime.Now;
                 }
                 catch (ArgumentNullException)
