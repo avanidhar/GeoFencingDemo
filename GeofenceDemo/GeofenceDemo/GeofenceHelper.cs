@@ -2,132 +2,109 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Geolocation;
 using Windows.Devices.Geolocation.Geofencing;
 using Windows.UI.Core;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
 namespace GeofenceDemo
 {
     public sealed partial class MainPage : Page
     {
-        private async void InitializeGeolocation()
+        private CancellationTokenSource _cts = null;
+        private static readonly string fenceId = "dummyFence";
+        private async void GenerateGeofence()
         {
-            // Get permission to use location
-            var accessStatus = await Geolocator.RequestAccessAsync();
-            switch (accessStatus)
+            bool fenceAlreadyExists = GeofenceMonitor.Current.Geofences.Any(g => g.Id == fenceId);
+
+            if (!fenceAlreadyExists)
             {
-                case GeolocationAccessStatus.Allowed:
-                   
-                    // register for state change events
-                    GeofenceMonitor.Current.GeofenceStateChanged += OnGeofenceStateChanged;
-                    GeofenceMonitor.Current.StatusChanged += OnGeofenceStatusChanged;
-                    break;
+                // Get cancellation token
+                _cts = new CancellationTokenSource();
+                CancellationToken token = _cts.Token;
 
-                case GeolocationAccessStatus.Denied:
-                    this.NotifyUser("Access denied.", NotifyType.ErrorMessage);
-                    break;
+                var geolocator = new Geolocator();
 
-                case GeolocationAccessStatus.Unspecified:
-                    this.NotifyUser("Unspecified error.", NotifyType.ErrorMessage);
-                    break;
-            }
-        }
-        private Geofence GenerateGeofence()
-        {
-            string fenceKey = "simpleFence";
+                // Request a high accuracy position for better accuracy locating the geofence
+                geolocator.DesiredAccuracy = PositionAccuracy.High;
+                Geoposition pos = await geolocator.GetGeopositionAsync().AsTask(token);
 
-            BasicGeoposition position;
-            position.Latitude = 47.6785619;
-            position.Longitude = -122.1311156;
-            position.Altitude = 0.0;
-            double radius = 10;
+                BasicGeoposition position;
+                position.Latitude = pos.Coordinate.Latitude;
+                position.Longitude = pos.Coordinate.Longitude;
+                position.Altitude = 0.0;
+                double radius = 1;
 
-            // the geofence is a circular region
-            Geocircle geocircle = new Geocircle(position, radius);
+                // the geofence is a circular region
+                Geocircle geocircle = new Geocircle(position, radius);
 
-            bool singleUse = false;
+                bool singleUse = false;
 
-            // want to listen for enter geofence, exit geofence and remove geofence events
-            // you can select a subset of these event states
-            MonitoredGeofenceStates mask = MonitoredGeofenceStates.Entered | MonitoredGeofenceStates.Exited | MonitoredGeofenceStates.Removed;
+                // want to listen for enter geofence, exit geofence and remove geofence events
+                // you can select a subset of these event states
+                MonitoredGeofenceStates mask = MonitoredGeofenceStates.Entered | MonitoredGeofenceStates.Exited | MonitoredGeofenceStates.Removed;
 
-            TimeSpan dwellTime;
-            TimeSpan duration;
-            DateTimeOffset startTime;
+                TimeSpan dwellTime;
+                TimeSpan duration;
+                DateTimeOffset startTime;
 
-            try
-            {
-                dwellTime = TimeSpan.FromSeconds(5);
-
-                duration = TimeSpan.FromHours(1);
-
-                startTime = DateTimeOffset.Now;
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (FormatException)
-            {
-                this.NotifyUser("Entered value is not a valid string representation of a date and time", NotifyType.ErrorMessage);
-            }
-            catch (ArgumentException)
-            {
-                this.NotifyUser("The offset is greater than 14 hours or less than -14 hours.", NotifyType.ErrorMessage);
-            }
-
-            var geoFence = new Geofence(fenceKey, geocircle, mask, singleUse, dwellTime, startTime, duration);
-            this.NotifyUser("GeoFence succesfully created", NotifyType.StatusMessage);
-
-            return geoFence;
-        }
-
-        public async void OnGeofenceStateChanged(GeofenceMonitor sender, object e)
-        {
-            var reports = sender.ReadReports();
-
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                foreach (GeofenceStateChangeReport report in reports)
+                try
                 {
-                    GeofenceState state = report.NewState;
-
-                    Geofence geofence = report.Geofence;
-
-                    if (state == GeofenceState.Removed)
-                    {
-                        // remove the geofence from the geofences collection
-                        GeofenceMonitor.Current.Geofences.Remove(geofence);
-                    }
-                    else if (state == GeofenceState.Entered)
-                    {
-                        // Your app takes action based on the entered event
-
-                        // NOTE: You might want to write your app to take particular
-                        // action based on whether the app has internet connectivity.
-                        this.NotifyUser("Fence ENTERED", NotifyType.StatusMessage);
-
-                    }
-                    else if (state == GeofenceState.Exited)
-                    {
-                        // Your app takes action based on the exited event
-
-                        // NOTE: You might want to write your app to take particular
-                        // action based on whether the app has internet connectivity.
-                        this.NotifyUser("Fence EXITED", NotifyType.StatusMessage);
-
-                    }
+                    dwellTime = TimeSpan.FromSeconds(10);
+                    duration = TimeSpan.FromSeconds(20);
+                    startTime = DateTime.Now;
                 }
-            });
-        }
+                catch (ArgumentNullException)
+                {
+                }
 
-        public async void OnGeofenceStatusChanged(GeofenceMonitor sender, object e)
-        {
-            var status = sender.Status;
+                fence = new Geofence(fenceId, geocircle, mask, singleUse, dwellTime, startTime, duration);
 
-            this.NotifyUser("Fence status has changed to : " + status, NotifyType.StatusMessage);
-        }
+                GeofenceMonitor.Current.Geofences.Add(fence);
+                this.NotifyUser("GeoFence succesfully created", NotifyType.StatusMessage);
+            }
+            else
+            {
+                var existingFence = GeofenceMonitor.Current.Geofences.Where(g => g.Id == fenceId).FirstOrDefault();
+                this.NotifyUser("Fence already exists. Using it", NotifyType.StatusMessage);
+            }
 
     }
+
+
+
+    /// <summary>
+    /// This is the click handler for the 'Create Geofence' button.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void OnCreateGeofence(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // get lat/long/radius, the fence name (fenceKey), 
+            // and other properties from controls,
+            // depending on data in controls for activation time
+            // and duration the appropriate
+            // constructor will be used.
+            GenerateGeofence();
+
+        }
+        catch (TaskCanceledException)
+        {
+            this.NotifyUser("Canceled", NotifyType.StatusMessage);
+        }
+        catch (Exception ex)
+        {
+            // GeofenceMonitor failed in adding a geofence
+            // exceptions could be from out of memory, lat/long out of range,
+            // too long a name, not a unique name, specifying an activation
+            // time + duration that is still in the past
+            this.NotifyUser(ex.ToString(), NotifyType.ErrorMessage);
+        }
+    }
+}
 }

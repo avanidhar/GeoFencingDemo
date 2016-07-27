@@ -27,22 +27,44 @@ namespace GeofenceDemo
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private uint accuracyInMeters = 1;
-        
-        // Proides access to location data
+        // Provides access to location data
         private Geolocator _geolocator = null;
-
+        private Geofence fence = null;
+        private CoreWindow coreWindow;
         public MainPage()
         {
             this.InitializeComponent();
             this.InitializeGeolocation();
-            this.GenerateGeofence();
+
+            coreWindow = CoreWindow.GetForCurrentThread(); // this needs to be set before InitializeComponent sets up event registration for app visibility
+            coreWindow.VisibilityChanged += OnVisibilityChanged;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            DesiredAccuracyInMeters.IsEnabled = true;
-            DesiredAccuracyInMeters.Text = this.accuracyInMeters.ToString();
+        }
+
+        private async void InitializeGeolocation()
+        {
+            // Get permission to use location
+            var accessStatus = await Geolocator.RequestAccessAsync();
+            switch (accessStatus)
+            {
+                case GeolocationAccessStatus.Allowed:
+
+                    // register for state change events
+                    GeofenceMonitor.Current.GeofenceStateChanged += OnGeofenceStateChanged;
+                    GeofenceMonitor.Current.StatusChanged += OnGeofenceStatusChanged;
+                    break;
+
+                case GeolocationAccessStatus.Denied:
+                    this.NotifyUser("Access denied.", NotifyType.ErrorMessage);
+                    break;
+
+                case GeolocationAccessStatus.Unspecified:
+                    this.NotifyUser("Unspecified error.", NotifyType.ErrorMessage);
+                    break;
+            }
         }
 
         /// <summary>
@@ -65,6 +87,26 @@ namespace GeofenceDemo
             GeofenceMonitor.Current.StatusChanged -= OnGeofenceStatusChanged;
 
             base.OnNavigatingFrom(e);
+        }
+
+        private void OnVisibilityChanged(CoreWindow sender, VisibilityChangedEventArgs args)
+        {
+            // NOTE: After the app is no longer visible on the screen and before the app is suspended
+            // you might want your app to use toast notification for any geofence activity.
+            // By registering for VisibiltyChanged the app is notified when the app is no longer visible in the foreground.
+
+            if (args.Visible)
+            {
+                // register for foreground events
+                GeofenceMonitor.Current.GeofenceStateChanged += OnGeofenceStateChanged;
+                GeofenceMonitor.Current.StatusChanged += OnGeofenceStatusChanged;
+            }
+            else
+            {
+                // unregister foreground events (let background capture events)
+                GeofenceMonitor.Current.GeofenceStateChanged -= OnGeofenceStateChanged;
+                GeofenceMonitor.Current.StatusChanged -= OnGeofenceStatusChanged;
+            }
         }
 
         public enum NotifyType
@@ -98,69 +140,6 @@ namespace GeofenceDemo
                 StatusBorder.Visibility = Visibility.Collapsed;
                 StatusPanel.Visibility = Visibility.Collapsed;
             }
-        }
-
-        async private void SendGeolocation(object sender, RoutedEventArgs e)
-        {
-            LocationDisabledMessage.Visibility = Visibility.Collapsed;
-            try
-            {
-                // Request permission to access location
-                var accessStatus = await Geolocator.RequestAccessAsync();
-
-                switch (accessStatus)
-                {
-                    case GeolocationAccessStatus.Allowed:
-
-                        var geoFences = GeofenceMonitor.Current.Geofences;
-                        // You should set MovementThreshold for distance-based tracking
-                        // or ReportInterval for periodic-based tracking before adding event
-                        // handlers. If none is set, a ReportInterval of 1 second is used
-                        // as a default and a position will be returned every 1 second.
-                        //
-                        // Value of 2000 milliseconds (2 seconds) 
-                        // isn't a requirement, it is just an example.
-                        _geolocator = new Geolocator { ReportInterval = 2000 };
-
-                        // Subscribe to PositionChanged event to get updated tracking positions
-                        _geolocator.PositionChanged += OnPositionChanged;
-
-                        // Subscribe to StatusChanged event to get updates of location status changes
-                        _geolocator.StatusChanged += OnStatusChanged;
-                        _geolocator.DesiredAccuracy = PositionAccuracy.High;
-
-                        this.NotifyUser("Waiting for update...", NotifyType.StatusMessage);
-                        LocationDisabledMessage.Visibility = Visibility.Collapsed;
-                        GetGeolocationButton.IsEnabled = false;
-                        StopSendingGeolocationButton.IsEnabled = true;
-
-                        GeofenceMonitor.Current.GeofenceStateChanged += OnGeofenceStateChanged;
-                        GeofenceMonitor.Current.StatusChanged += OnGeofenceStatusChanged;
-                        break;
-
-                    case GeolocationAccessStatus.Denied:
-                        this.NotifyUser("Access to location is denied.", NotifyType.ErrorMessage);
-                        LocationDisabledMessage.Visibility = Visibility.Visible;
-                        UpdateLocationData(null);
-                        break;
-
-                    case GeolocationAccessStatus.Unspecified:
-                        this.NotifyUser("Unspecified error.", NotifyType.ErrorMessage);
-                        UpdateLocationData(null);
-                        break;
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                this.NotifyUser("Canceled.", NotifyType.StatusMessage);
-            }
-            catch (Exception ex)
-            {
-                this.NotifyUser(ex.ToString(), NotifyType.ErrorMessage);
-            }
-            
-            GetGeolocationButton.IsEnabled = false;
-            StopSendingGeolocationButton.IsEnabled = true;
         }
 
         /// <summary>
@@ -279,6 +258,52 @@ namespace GeofenceDemo
             // Clear status
             this.NotifyUser("", NotifyType.StatusMessage);
             UpdateLocationData(null);
+        }
+
+        public async void OnGeofenceStateChanged(GeofenceMonitor sender, object e)
+        {
+            var reports = sender.ReadReports();
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                foreach (GeofenceStateChangeReport report in reports)
+                {
+                    GeofenceState state = report.NewState;
+
+                    Geofence geofence = report.Geofence;
+
+                    if (state == GeofenceState.Removed)
+                    {
+                        // remove the geofence from the geofences collection
+                        GeofenceMonitor.Current.Geofences.Remove(geofence);
+                        this.NotifyUser("Fence REMOVED", NotifyType.StatusMessage);
+                    }
+                    else if (state == GeofenceState.Entered)
+                    {
+                        // Your app takes action based on the entered event
+
+                        // NOTE: You might want to write your app to take particular
+                        // action based on whether the app has internet connectivity.
+                        this.NotifyUser("Fence ENTERED", NotifyType.StatusMessage);
+
+                    }
+                    else if (state == GeofenceState.Exited)
+                    {
+                        // Your app takes action based on the exited event
+
+                        // NOTE: You might want to write your app to take particular
+                        // action based on whether the app has internet connectivity.
+                        this.NotifyUser("Fence EXITED", NotifyType.StatusMessage);
+                    }
+                }
+            });
+        }
+
+        public async void OnGeofenceStatusChanged(GeofenceMonitor sender, object e)
+        {
+            var status = sender.Status;
+
+            this.NotifyUser("Fence status has changed to : " + status, NotifyType.StatusMessage);
         }
     }
 }
