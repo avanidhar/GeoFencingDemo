@@ -169,6 +169,7 @@ namespace GeofenceDemo
                         // remove the geofence from the geofences collection
                         GeofenceMonitor.Current.Geofences.Remove(geofence);
                         this.NotifyUser("Fence REMOVED", NotifyType.StatusMessage);
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "0" });
                     }
                     else if (state == GeofenceState.Entered)
                     {
@@ -177,7 +178,7 @@ namespace GeofenceDemo
                         // NOTE: You might want to write your app to take particular
                         // action based on whether the app has internet connectivity.
                         this.NotifyUser("Fence ENTERED", NotifyType.StatusMessage);
-
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "1" });
                     }
                     else if (state == GeofenceState.Exited)
                     {
@@ -186,6 +187,7 @@ namespace GeofenceDemo
                         // NOTE: You might want to write your app to take particular
                         // action based on whether the app has internet connectivity.
                         this.NotifyUser("Fence EXITED", NotifyType.StatusMessage);
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "2" });
                     }
                 }
             });
