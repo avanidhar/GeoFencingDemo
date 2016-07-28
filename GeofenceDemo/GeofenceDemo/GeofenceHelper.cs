@@ -91,9 +91,6 @@ namespace GeofenceDemo
                 // and duration the appropriate
                 // constructor will be used.
                 GenerateGeofence();
-
-                ReportView.Visibility = Visibility.Visible;
-                ReportView.Navigate(new Uri("ms-appx-web:///html/index.html"));
             }
             catch (TaskCanceledException)
             {

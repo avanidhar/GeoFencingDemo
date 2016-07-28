@@ -37,6 +37,9 @@ namespace GeofenceDemo
 
             coreWindow = CoreWindow.GetForCurrentThread(); // this needs to be set before InitializeComponent sets up event registration for app visibility
             coreWindow.VisibilityChanged += OnVisibilityChanged;
+
+            ReportView.Visibility = Visibility.Visible;
+            ReportView.Navigate(new Uri("ms-appx-web:///html/index.html"));
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -169,7 +172,7 @@ namespace GeofenceDemo
                         // remove the geofence from the geofences collection
                         GeofenceMonitor.Current.Geofences.Remove(geofence);
                         this.NotifyUser("Fence REMOVED", NotifyType.StatusMessage);
-                        ReportView.InvokeScriptAsync("setPage", new string[] { "0" });
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "1" });
                     }
                     else if (state == GeofenceState.Entered)
                     {
@@ -178,7 +181,7 @@ namespace GeofenceDemo
                         // NOTE: You might want to write your app to take particular
                         // action based on whether the app has internet connectivity.
                         this.NotifyUser("Fence ENTERED", NotifyType.StatusMessage);
-                        ReportView.InvokeScriptAsync("setPage", new string[] { "1" });
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "0" });
                     }
                     else if (state == GeofenceState.Exited)
                     {
@@ -187,7 +190,7 @@ namespace GeofenceDemo
                         // NOTE: You might want to write your app to take particular
                         // action based on whether the app has internet connectivity.
                         this.NotifyUser("Fence EXITED", NotifyType.StatusMessage);
-                        ReportView.InvokeScriptAsync("setPage", new string[] { "2" });
+                        ReportView.InvokeScriptAsync("setPage", new string[] { "1" });
                     }
                 }
             });
