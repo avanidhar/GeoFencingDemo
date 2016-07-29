@@ -112,6 +112,7 @@
     <None Include="GeofenceDemo_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="html\index2.html" />
     <Content Include="html\index.html" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />

@@ -1,0 +1,39 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Title Goes Here</title>
+    <style type="text/css">
+            body, html
+            {
+                margin: 0; padding: 0; height: 100%; overflow: hidden;
+            }
+
+            #content
+            {
+                position:absolute; left: 0; right: 0; bottom: 0; top: 0px; 
+            }
+    </style>
+	<script type="text/javascript">
+		
+        var allPages = ["ReportSection", "ReportSection1", "ReportSection2"];
+
+
+        function setPage(pageIndex) {
+            var setPage = {
+                action: 'setPage',
+                pageName: allPages[parseInt(pageIndex)]
+            };
+            var iframeElement = document.getElementById("embedFrame");
+            iframeElement.contentWindow.postMessage(setPage, "*");
+        }
+	</script>
+</head>
+<body>
+        <div id="content">
+            <iframe id="embedFrame" src="https://msit.powerbi.com/view?r=eyJrIjoiYWU4NDQ0ODQtM2QxOC00NjcwLWFmZmMtZDBlOWRmNjEzNjU4IiwidCI6IjcyZjk4OGJmLTg2ZjEtNDFhZi05MWFiLTJkN2NkMDExZGI0NyIsImMiOjV9" width="100%" height="100%" frameborder="0" 
+            allowfullscreen="allowed" webkitallowfullscreen="allowed"></iframe>
+        </div>
+</body>
+</html>
